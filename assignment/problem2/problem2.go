@@ -2,61 +2,50 @@ package main
 
 import (
 	"fmt"
-	"sync"
 )
 
-func g1(dataChan chan<- int, data int) {
+func g1(dataChan chan<- int, doneChan chan<- bool, data int) {
 	dataChan <- data
+	doneChan <- true
 }
 
-func g2(dataChan chan<- int, data int) {
-    dataChan <- data
+func g2(dataChan chan<- int, doneChan chan<- bool, data int) {
+	dataChan <- data
+	doneChan <- true
 }
 
-func g3(dataChan <-chan int, sumChan chan<- int) {
-    sum := 0
-    for data := range dataChan {
-        sum += data
-    }
-    sumChan <- sum
+func g3(dataChan1 <-chan int, dataChan2 <-chan int, sumChan chan<- int) {
+	sum := 0
+	for i := 0; i < 2; i++ {
+		select {
+		case data := <-dataChan1:
+			sum += data
+		case data := <-dataChan2:
+			sum += data
+		}
+	}
+	sumChan <- sum
 }
 
 func main() {
-    dataChan1 := make(chan int)
-    dataChan2 := make(chan int)
-    sumChan := make(chan int)
+	dataChan1 := make(chan int)
+	doneChan1 := make(chan bool)
+	dataChan2 := make(chan int)
+	doneChan2 := make(chan bool)
+	sumChan := make(chan int)
 
-    go g1(dataChan1, 1)
-    go g2(dataChan2, 2)
-    go g3(merge(dataChan1, dataChan2), sumChan)
+	go g1(dataChan1, doneChan1, 1)
+	go g2(dataChan2, doneChan2, 8)
 
-    sum := <-sumChan
-    fmt.Println("Sum:", sum)
-}
+	go func() {
+		<-doneChan1
+		<-doneChan2
+		close(dataChan1)
+		close(dataChan2)
+	}()
 
-// merge merges two channels into one
-func merge(channels ...<-chan int) <-chan int {
-    var wg sync.WaitGroup
-    out := make(chan int)
+	go g3(dataChan1, dataChan2, sumChan)
 
-    // Start a goroutine for each input channel to read values
-    // and send them to the output channel
-    output := func(ch <-chan int) {
-        defer wg.Done()
-        for n := range ch {
-            out <- n
-        }
-    }
-    wg.Add(len(channels))
-    for _, ch := range channels {
-        go output(ch)
-    }
-
-    // Wait for all input goroutines to complete
-    go func() {
-        wg.Wait()
-        close(out)
-    }()
-
-    return out
+	sum := <-sumChan
+	fmt.Println("Sum:", sum)
 }

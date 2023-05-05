@@ -8,22 +8,21 @@ import (
 )
 
 func main() {
-	// Create a new mux router
 	router := mux.NewRouter()
 
-	// Define endpoint-one
+	// endpoint-one
 	router.HandleFunc("/endpoint-one", func(w http.ResponseWriter, r *http.Request) {
-		// Write a response to the client
+		// response to client
 		fmt.Fprint(w, "This is endpoint one!")
 	})
 
-	// Define endpoint-two
+	// endpoint-two
 	router.HandleFunc("/endpoint-two/{input}", func(w http.ResponseWriter, r *http.Request) {
-		// Get the input parameter from the request URL
+		// get input from url
 		vars := mux.Vars(r)
 		input := vars["input"]
 
-		// Write a response to the client
+		// response to client
 		fmt.Fprintf(w, "This is endpoint two with input: %s", input)
 	})
 
