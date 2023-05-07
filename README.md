@@ -1,2 +1,2 @@
-# Devlytics
-Submission to assignment of Devlytics.
+# hashedtokens-assignments
+Submission to assignment of Hashedtokens.
